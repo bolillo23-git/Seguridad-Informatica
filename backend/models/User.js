@@ -1,5 +1,4 @@
 import mongoose from 'mongoose';
-import bcrypt from 'bcryptjs';
 
 const userSchema = new mongoose.Schema({
   email: { 
@@ -14,6 +13,16 @@ const userSchema = new mongoose.Schema({
   nombreUsuario: { 
     type: String, 
     required: true 
+  },
+  rol: {
+    type: String,
+    enum: ['usuario', 'moderador', 'admin'],
+    default: 'usuario' // Todos los que se registren por la web serán 'usuario' por defecto
+  },
+  estado: {
+    type: String,
+    enum: ['activo', 'suspendido', 'bloqueado'],
+    default: 'activo' // Todos empiezan activos
   }
 });
 
