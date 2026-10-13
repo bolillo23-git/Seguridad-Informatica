@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Muro - Red Social</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <style>
+        body {
+            background-color: #f0f2f5;
+        }
+
+        .navbar {
+            background-color: #ffffff;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, .08);
+        }
+
+        .card {
+            border: none;
+            border-radius: 12px;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, .1);
+        }
+
+        .btn-post {
+            border-radius: 20px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Barra de Navegación -->
+    <nav class="navbar navbar-expand-lg navbar-light sticky-top mb-4">
+        <div class="container">
+            <a class="navbar-brand fw-bold text-primary" href="#"><i class="bi bi-globe bg-light"></i> SocialNet</a>
+
+            <!-- Buscador tipo Facebook -->
+            <form class="d-flex mx-auto" id="formBuscarPersonas" style="max-width: 400px; width: 100%;">
+                <div class="input-group">
+                    <input class="form-control bg-light border-0" type="search" id="inputBuscarPersonas"
+                        placeholder="Buscar personas..." required>
+                    <button class="btn btn-light text-primary" type="submit">
+                        <i class="bi bi-search"></i>
+                    </button>
+                </div>
+            </form>
+
+            <div class="d-flex align-items-center">
+                <span class="me-3 fw-semibold d-none d-md-block" id="nombreUsuarioDisplay">Cargando...</span>
+
+                <!-- Botón que abre el panel lateral -->
+                <button class="btn btn-outline-primary btn-sm me-3" type="button" data-bs-toggle="offcanvas"
+                    data-bs-target="#panelAmigos" onclick="cargarDatosSociales()">
+                    <i class="bi bi-people-fill"></i> Amigos
+                </button>
+
+                <button class="btn btn-outline-danger btn-sm" onclick="cerrarSesion()">Salir</button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="row justify-content-center">
+            <!-- Columna Izquierda: Perfil -->
+            <div class="col-md-3 d-none d-md-block">
+                <div class="card p-3 text-center">
+                    <div class="mb-3">
+                        <!-- Ahora es una etiqueta img que mostrará tu foto real -->
+                        <a href="perfil.html" class="text-decoration-none">
+                            <img id="imgPerfilMuroIzq" src="https://cdn-icons-png.flaticon.com/512/149/149071.png"
+                                class="rounded-circle object-fit-cover shadow-sm border"
+                                style="width: 120px; height: 120px; cursor: pointer;" alt="Ir a mi perfil">
+                        </a>
+                    </div>
+                    <h5 class="card-title mb-0" id="perfilNombre">Usuario</h5>
+                    <p class="text-muted small" id="perfilRol">@rol</p>
+                </div>
+            </div>
+
+            <!-- Columna Central: Publicaciones -->
+            <div class="col-md-6">
+                <div class="card p-3 mb-4">
+                    <form id="formularioPublicacion">
+                        <textarea class="form-control border-0 bg-light" id="contenidoPost" rows="3"
+                            placeholder="¿Qué estás pensando?" required></textarea>
+                        <hr>
+                        <div class="d-flex justify-content-end">
+                            <button type="submit" class="btn btn-primary btn-post px-4">Publicar</button>
+                        </div>
+                    </form>
+                </div>
+                <div id="contenedorPublicaciones"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- EL PANEL LATERAL (Offcanvas) -->
+    <div class="offcanvas offcanvas-end shadow" tabindex="-1" id="panelAmigos">
+        <div class="offcanvas-header border-bottom">
+            <h5 class="offcanvas-title fw-bold text-primary"><i class="bi bi-chat-dots"></i> Mis Amigos</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
+        </div>
+        <div class="offcanvas-body">
+
+            <h6 class="text-secondary fw-bold mb-3">Solicitudes Pendientes</h6>
+            <div id="listaSolicitudes" class="mb-4">
+                <!-- Aquí se dibujarán las solicitudes -->
+            </div>
+
+            <hr>
+
+            <h6 class="text-secondary fw-bold mb-3">Lista de Amigos</h6>
+            <div id="listaAmigos">
+                <!-- Aquí se dibujarán los amigos -->
+            </div>
+
+        </div>
+    </div>
+
+    <!-- MODAL PARA RESULTADOS DE BÚSQUEDA -->
+    <div class="modal fade" id="modalResultados" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold">Resultados de búsqueda</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="cuerpoResultados">
+                    <!-- Aquí se inyectarán las personas encontradas -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL PARA EL CHAT PRIVADO -->
+    <div class="modal fade" id="modalChat" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content">
+                <!-- Cabecera azul del chat -->
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title fw-bold">
+                        <i class="bi bi-chat-dots-fill me-2"></i> Chat con <span id="nombreChatAmigo"></span>
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                        aria-label="Close"></button>
+                </div>
+                <!-- Cuerpo del chat (Fondo estilo WhatsApp/Facebook) -->
+                <div class="modal-body" id="cuerpoChat" style="background-color: #e5ddd5; height: 400px;">
+                    <!-- Las burbujas de mensaje aparecerán aquí -->
+                </div>
+                <!-- Caja de texto inferior -->
+                <div class="modal-footer p-2 bg-light">
+                    <form id="formEnviarMensaje" class="w-100 d-flex m-0">
+                        <input type="text" id="inputMensaje" class="form-control rounded-pill me-2"
+                            placeholder="Escribe un mensaje..." required autocomplete="off">
+                        <button type="submit" class="btn btn-primary rounded-circle shadow-sm" title="Enviar">
+                            <i class="bi bi-send-fill"></i>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts necesarios para Bootstrap y tu lógica -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="muro.js"></script>
+</body>
+
+</html>

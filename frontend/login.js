@@ -18,11 +18,18 @@ formularioLogin.addEventListener('submit', async (e) => {
         const datos = await respuesta.json();
 
         if (respuesta.status === 200) {
-            alert(`¡Bienvenido de vuelta, ${datos.usuario.nombreUsuario}!`);
-            // Aquí en el futuro lo redirigirías al muro de la red social
-            // window.location.href = 'muro.html'; 
+            // Guardamos los datos del usuario en el navegador para usarlos en las otras páginas
+            localStorage.setItem('usuarioLogueado', JSON.stringify(datos.usuario));
+
+            // Redirección basada en el rol
+            if (datos.usuario.rol === 'admin') {
+                window.location.href = 'panel-admin.html';
+            } else if (datos.usuario.rol === 'moderador') {
+                window.location.href = 'panel-moderador.html';
+            } else {
+                window.location.href = 'muro.html'; // El usuario normal va al muro
+            }
         } else {
-            // Si la contraseña o correo están mal, mostramos el "Credenciales inválidas"
             alert(datos.mensaje);
         }
 

@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel Admin - Red Social</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+
+        .navbar {
+            background-color: #212529;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Barra de Navegación Oscura para diferenciar que es el Admin -->
+    <nav class="navbar navbar-expand-lg navbar-dark sticky-top mb-4">
+        <div class="container">
+            <a class="navbar-brand fw-bold" href="#"><i class="bi bi-shield-lock"></i> Panel de Administración</a>
+            <div class="d-flex align-items-center text-white">
+                <span class="me-3 fw-semibold" id="nombreAdminDisplay">Cargando...</span>
+                <a href="muro.html" class="btn btn-outline-light btn-sm me-2">Ir al Muro</a>
+                <button class="btn btn-danger btn-sm" onclick="cerrarSesion()">Salir</button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="card shadow-sm border-0">
+            <div class="card-body p-4">
+                <h4 class="mb-4">Gestión de Usuarios y Roles</h4>
+
+                <div class="mb-4">
+                    <div class="input-group shadow-sm">
+                        <input type="text" id="buscadorEmail" class="form-control" placeholder="Buscar usuario por correo...">
+                        <button class="btn btn-primary" type="button" id="btnBuscar">
+                            <i class="bi bi-search"></i> Buscar
+                        </button>
+                    </div>
+                </div>-
+
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Nombre de Usuario</th>
+                                <th>Correo</th>
+                                <th>Rol Actual</th>
+                                <th>Asignar Nuevo Rol</th>
+                                <th>Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tablaUsuarios">
+                            <!-- Los usuarios se generarán aquí con JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="panel-admin.js"></script>
+</body>
+
+</html>

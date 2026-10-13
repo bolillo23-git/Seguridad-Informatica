@@ -22,8 +22,10 @@ router.post('/', async (req, res) => {
     res.status(200).json({
       mensaje: '¡Login exitoso, hermano!',
       usuario: {
+        id: usuario._id,            
         email: usuario.email,
-        nombreUsuario: usuario.nombreUsuario
+        nombreUsuario: usuario.nombreUsuario,
+        rol: usuario.rol           
       }
     });
 

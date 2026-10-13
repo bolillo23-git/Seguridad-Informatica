@@ -84,4 +84,17 @@ router.delete('/:id', async (req, res) => {
   }
 });
 
+router.get('/', async (req, res) => {
+  try {
+    const publicaciones = await Publicacion.find()
+      .populate('autor', 'nombreUsuario') // Trae el nombreUsuario basándose en el ID del autor
+      .sort({ fechaCreacion: -1 }); // Ordena de la más reciente a la más antigua
+
+    res.status(200).json(publicaciones);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ mensaje: 'Error al obtener las publicaciones' });
+  }
+});
+
 export default router;
