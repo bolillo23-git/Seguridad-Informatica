@@ -7,7 +7,7 @@ if (!usuarioLocal || usuarioLocal.rol !== 'admin') {
     window.location.href = 'muro.html';
 } else {
     document.getElementById('nombreAdminDisplay').innerText = `Admin: ${usuarioLocal.nombreUsuario}`;
-    cargarUsuarios();
+    cargarUsuarios(); // Se llama al inicio para llenar la tabla
 }
 
 function cerrarSesion() {
@@ -15,16 +15,22 @@ function cerrarSesion() {
     window.location.href = 'login.html';
 }
 
-// 2. Pedir todos los usuarios al backend
+// 2. Pedir todos los usuarios al backend al cargar la página
 async function cargarUsuarios() {
     try {
-        const respuesta = await fetch('http://localhost:3000/api/admin/roles/usuarios');
+      
+        const respuesta = await fetch(`http://localhost:3000/api/admin/roles/buscar`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'usuario-id': usuarioLocal.id 
+            }
+        });
         const usuarios = await respuesta.json();
 
         tablaUsuarios.innerHTML = '';
 
         usuarios.forEach(user => {
-            // Evitamos que el admin se quite el rol a sí mismo por accidente
             const disabled = user._id === usuarioLocal.id ? 'disabled' : '';
 
             const tr = document.createElement('tr');
@@ -73,48 +79,54 @@ async function cambiarRol(idUsuario) {
     } catch (error) {
         console.error('Error al cambiar rol:', error);
     }
-    
+} // CORRECCIÓN 2: El buscador ya NO está atrapado dentro de esta función
 
-    const buscadorEmail = document.getElementById('buscadorEmail');
-    const btnBuscar = document.getElementById('btnBuscar');
+// 4. Lógica del buscador con el botón
+const buscadorEmail = document.getElementById('buscadorEmail');
+const btnBuscar = document.getElementById('btnBuscar');
 
-    if (btnBuscar && buscadorEmail) {
-        // Ahora ejecutamos la búsqueda solo cuando le den clic al botón
-        btnBuscar.addEventListener('click', async () => {
-            const textoBuscado = buscadorEmail.value.trim();
+if (btnBuscar && buscadorEmail) {
+    btnBuscar.addEventListener('click', async () => {
+        const textoBuscado = buscadorEmail.value.trim();
 
-            try {
-                const respuesta = await fetch(`http://localhost:3000/api/admin/roles/buscar?correo=${textoBuscado}`);
-                const usuarios = await respuesta.json();
+        try {
+            // CORRECCIÓN 3: Agregamos los headers al buscador también
+            const respuesta = await fetch(`http://localhost:3000/api/admin/roles/buscar?correo=${textoBuscado}`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'usuario-id': usuarioLocal.id // Pase VIP
+                }
+            });
+            const usuarios = await respuesta.json();
 
-                tablaUsuarios.innerHTML = '';
+            tablaUsuarios.innerHTML = '';
 
-                usuarios.forEach(user => {
-                    const disabled = user._id === usuarioLocal.id ? 'disabled' : '';
-                    const tr = document.createElement('tr');
+            usuarios.forEach(user => {
+                const disabled = user._id === usuarioLocal.id ? 'disabled' : '';
+                const tr = document.createElement('tr');
 
-                    tr.innerHTML = `
-          <td class="fw-bold">${user.nombreUsuario}</td>
-          <td>${user.email}</td>
-          <td><span class="badge bg-secondary">${user.rol.toUpperCase()}</span></td>
-          <td>
-            <select class="form-select form-select-sm" id="select-rol-${user._id}" ${disabled}>
-              <option value="usuario" ${user.rol === 'usuario' ? 'selected' : ''}>Usuario</option>
-              <option value="moderador" ${user.rol === 'moderador' ? 'selected' : ''}>Moderador</option>
-              <option value="admin" ${user.rol === 'admin' ? 'selected' : ''}>Admin</option>
-            </select>
-          </td>
-          <td>
-            <button class="btn btn-primary btn-sm" onclick="cambiarRol('${user._id}')" ${disabled}>
-              Actualizar
-            </button>
-          </td>
-        `;
-                    tablaUsuarios.appendChild(tr);
-                });
-            } catch (error) {
-                console.error('Error al realizar la búsqueda:', error);
-            }
-        });
-    }
+                tr.innerHTML = `
+                  <td class="fw-bold">${user.nombreUsuario}</td>
+                  <td>${user.email}</td>
+                  <td><span class="badge bg-secondary">${user.rol.toUpperCase()}</span></td>
+                  <td>
+                    <select class="form-select form-select-sm" id="select-rol-${user._id}" ${disabled}>
+                      <option value="usuario" ${user.rol === 'usuario' ? 'selected' : ''}>Usuario</option>
+                      <option value="moderador" ${user.rol === 'moderador' ? 'selected' : ''}>Moderador</option>
+                      <option value="admin" ${user.rol === 'admin' ? 'selected' : ''}>Admin</option>
+                    </select>
+                  </td>
+                  <td>
+                    <button class="btn btn-primary btn-sm" onclick="cambiarRol('${user._id}')" ${disabled}>
+                      Actualizar
+                    </button>
+                  </td>
+                `;
+                tablaUsuarios.appendChild(tr);
+            });
+        } catch (error) {
+            console.error('Error al realizar la búsqueda:', error);
+        }
+    });
 }

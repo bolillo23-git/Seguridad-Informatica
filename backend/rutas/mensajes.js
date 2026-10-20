@@ -1,5 +1,6 @@
 import express from 'express';
 import Mensaje from '../models/Mensaje.js';
+import { obtenerHoraNTP } from '../utils/tiempo.js';
 
 const router = express.Router();
 
@@ -11,6 +12,7 @@ router.post('/', async (req, res) => {
         if (!contenido || contenido.trim() === '') {
             return res.status(400).json({ mensaje: 'El mensaje no puede estar vacío' });
         }
+        
 
         const nuevoMensaje = new Mensaje({ remitente, destinatario, contenido });
         await nuevoMensaje.save();

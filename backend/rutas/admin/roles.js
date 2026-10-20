@@ -7,15 +7,27 @@ const router = express.Router();
 // Ruta GET para buscar usuarios por correo
 router.get('/buscar', async (req, res) => {
   try {
-    const { correo } = req.query; // Leemos lo que llegue en ?correo=...
+    
+    const idSolicitante = req.headers['usuario-id'];
 
-    // Si la barra de búsqueda está vacía, devolvemos todos
+    if (!idSolicitante) {
+      return res.status(401).json({ mensaje: 'Falta identificación' });
+    }
+
+    const solicitante = await User.findById(idSolicitante);
+    
+    {
+      return res.status(403).json({ mensaje: 'Acceso denegado: No tienes permisos de administrador.' });
+    }
+
+    // 2. Si pasó el filtro, hacemos la búsqueda normal
+    const { correo } = req.query;
+
     if (!correo) {
       const usuarios = await User.find().select('-password');
       return res.status(200).json(usuarios);
     }
 
-    // Buscamos correos que contengan el texto, ignorando mayúsculas/minúsculas
     const usuariosEncontrados = await User.find({
       email: { $regex: correo, $options: 'i' }
     }).select('-password');
