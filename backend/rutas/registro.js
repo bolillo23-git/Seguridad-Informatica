@@ -1,6 +1,7 @@
 import express from 'express';
-import bcrypt from 'bcryptjs'; 
+import bcrypt from 'bcryptjs';
 import User from '../models/User.js';
+import { obtenerHoraNTP } from '../utils/tiempo.js'; 
 
 const router = express.Router();
 
@@ -15,11 +16,15 @@ router.post('/', async (req, res) => {
 
     const salt = await bcrypt.genSalt(10);
     const passwordHasheada = await bcrypt.hash(password, salt);
-        
+
+    
+    const horaOficial = await obtenerHoraNTP();
+
     const nuevoUsuario = new User({
       email,
-      password: passwordHasheada, 
-      nombreUsuario
+      password: passwordHasheada,
+      nombreUsuario,
+      fechaCreacion: horaOficial // 
     });
 
     await nuevoUsuario.save();

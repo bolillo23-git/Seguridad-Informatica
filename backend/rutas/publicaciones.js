@@ -1,31 +1,36 @@
 import express from 'express';
 import Publicacion from '../models/Publicacion.js';
 import User from '../models/User.js';
+import { obtenerHoraNTP } from '../utils/tiempo.js'; // 1. Importamos la utilidad NTP
 
 const router = express.Router();
 
-// Ruta POST para crear una publicación
+
 router.post('/', async (req, res) => {
   try {
     const { contenido, autorId } = req.body;
 
-    // Verificamos que el usuario realmente exista antes de dejarlo publicar
+
     const usuarioExiste = await User.findById(autorId);
     if (!usuarioExiste) {
       return res.status(404).json({ mensaje: 'Usuario no encontrado' });
     }
 
-    // Creamos y guardamos la publicación
+    
+    const horaOficial = await obtenerHoraNTP();
+
+    
     const nuevaPublicacion = new Publicacion({
       contenido,
-      autor: autorId
+      autor: autorId,
+      fechaCreacion: horaOficial 
     });
 
     await nuevaPublicacion.save();
 
-    res.status(201).json({ 
+    res.status(201).json({
       mensaje: 'Publicación creada con éxito',
-      publicacion: nuevaPublicacion 
+      publicacion: nuevaPublicacion
     });
 
   } catch (error) {
@@ -35,19 +40,22 @@ router.post('/', async (req, res) => {
 });
 
 
-// ... código anterior de router.post('/') ...
-
 // Ruta PUT para editar una publicación existente
 router.put('/:id', async (req, res) => {
   try {
-    const { id } = req.params; // ID de la publicación en la URL
-    const { contenido } = req.body; // El nuevo texto
+    const { id } = req.params;
+    const { contenido } = req.body;
 
-    // Actualizamos el contenido de la publicación
+    
+    const horaOficial = await obtenerHoraNTP();
+
     const publicacionActualizada = await Publicacion.findByIdAndUpdate(
       id,
-      { contenido },
-      { new: true } // Devuelve el documento con los cambios ya aplicados
+      {
+        contenido,
+        fechaEdicion: horaOficial 
+      },
+      { new: true }
     );
 
     if (!publicacionActualizada) {
@@ -68,7 +76,7 @@ router.put('/:id', async (req, res) => {
 // Ruta DELETE para eliminar una publicación
 router.delete('/:id', async (req, res) => {
   try {
-    const { id } = req.params; // ID de la publicación en la URL
+    const { id } = req.params;
 
     const publicacionEliminada = await Publicacion.findByIdAndDelete(id);
 
@@ -84,11 +92,13 @@ router.delete('/:id', async (req, res) => {
   }
 });
 
+// Ruta GET para listar publicaciones
 router.get('/', async (req, res) => {
   try {
     const publicaciones = await Publicacion.find()
-      .populate('autor', 'nombreUsuario') // Trae el nombreUsuario basándose en el ID del autor
-      .sort({ fechaCreacion: -1 }); // Ordena de la más reciente a la más antigua
+      // PARCHE DE SEGURIDAD: Solo enviamos el ID, nombre y foto al muro.
+      .populate('autor', '_id nombreUsuario fotoPerfil')
+      .sort({ fechaCreacion: -1 });
 
     res.status(200).json(publicaciones);
   } catch (error) {

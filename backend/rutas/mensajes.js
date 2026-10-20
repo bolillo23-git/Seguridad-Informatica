@@ -1,10 +1,10 @@
 import express from 'express';
 import Mensaje from '../models/Mensaje.js';
-import { obtenerHoraNTP } from '../utils/tiempo.js';
+import { obtenerHoraNTP } from '../utils/tiempo.js'; // 1. Importamos nuestra función
 
 const router = express.Router();
 
-// 1. Enviar un mensaje nuevo
+// Enviar un mensaje nuevo
 router.post('/', async (req, res) => {
     try {
         const { remitente, destinatario, contenido } = req.body;
@@ -12,9 +12,18 @@ router.post('/', async (req, res) => {
         if (!contenido || contenido.trim() === '') {
             return res.status(400).json({ mensaje: 'El mensaje no puede estar vacío' });
         }
-        
 
-        const nuevoMensaje = new Mensaje({ remitente, destinatario, contenido });
+   
+        const horaOficial = await obtenerHoraNTP();
+
+    
+        const nuevoMensaje = new Mensaje({
+            remitente,
+            destinatario,
+            contenido,
+            fechaEnvio: horaOficial  // le pasamos la ahora
+        });
+
         await nuevoMensaje.save();
 
         res.status(201).json(nuevoMensaje);
@@ -23,6 +32,7 @@ router.post('/', async (req, res) => {
         res.status(500).json({ mensaje: 'Error al enviar el mensaje' });
     }
 });
+
 
 // 2. Obtener el historial de chat entre dos usuarios
 router.get('/:usuario1/:usuario2', async (req, res) => {
