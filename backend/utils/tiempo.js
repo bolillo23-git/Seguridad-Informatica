@@ -6,9 +6,9 @@ export const obtenerHoraNTP = () => {
         ntpClient.getNetworkTime("pool.ntp.org", 123, (error, fechaNTP) => {
             if (error) {
                 console.error("Fallo la conexión NTP, usando reloj local:", error);
-                resolve(new Date()); // Si algo falla, usamos la hora normal para no tirar el servidor
+                resolve(new Date()); 
             } else {
-                resolve(fechaNTP); // Devolvemos la hora oficial exacta
+                resolve(fechaNTP); 
             }
         });
     });

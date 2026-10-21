@@ -7,7 +7,6 @@ const router = express.Router();
 // Ruta GET para buscar usuarios por correo
 router.get('/buscar', async (req, res) => {
   try {
-    
     const idSolicitante = req.headers['usuario-id'];
 
     if (!idSolicitante) {
@@ -15,12 +14,13 @@ router.get('/buscar', async (req, res) => {
     }
 
     const solicitante = await User.findById(idSolicitante);
-    
-    {
+
+    // CORRECCIÓN: Aquí faltaba el "if" y evaluar que realmente sea admin
+    if (!solicitante || solicitante.rol !== 'admin') {
       return res.status(403).json({ mensaje: 'Acceso denegado: No tienes permisos de administrador.' });
     }
 
-    // 2. Si pasó el filtro, hacemos la búsqueda normal
+    // Si pasó el filtro, hacemos la búsqueda normal
     const { correo } = req.query;
 
     if (!correo) {
@@ -42,8 +42,20 @@ router.get('/buscar', async (req, res) => {
 // Ruta PUT para que un Admin le cambie el rol a otro usuario
 router.put('/:id', async (req, res) => {
   try {
-    const { id } = req.params; // ID de la persona a la que le cambiaremos el rol
-    const { nuevoRol } = req.body; 
+    // 1. BLINDAJE DE SEGURIDAD: Verificamos que el que hace la petición sea un admin
+    const idSolicitante = req.headers['usuario-id'];
+    if (!idSolicitante) {
+      return res.status(401).json({ mensaje: 'Falta identificación' });
+    }
+
+    const solicitante = await User.findById(idSolicitante);
+    if (!solicitante || solicitante.rol !== 'admin') {
+      return res.status(403).json({ mensaje: 'Acceso denegado: Solo un administrador puede cambiar roles.' });
+    }
+
+    // 2. Lógica normal para cambiar el rol
+    const { id } = req.params;
+    const { nuevoRol } = req.body;
 
     if (!['usuario', 'moderador', 'admin'].includes(nuevoRol)) {
       return res.status(400).json({ mensaje: 'Rol no válido' });
@@ -73,7 +85,6 @@ router.put('/:id', async (req, res) => {
 // Ruta GET para obtener la lista de todos los usuarios
 router.get('/usuarios', async (req, res) => {
   try {
-    // Buscamos a todos los usuarios, pero sin enviar sus contraseñas
     const usuarios = await User.find().select('-password');
     res.status(200).json(usuarios);
   } catch (error) {

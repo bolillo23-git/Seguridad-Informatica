@@ -1,7 +1,7 @@
 import express from 'express';
 import Publicacion from '../models/Publicacion.js';
 import User from '../models/User.js';
-import { obtenerHoraNTP } from '../utils/tiempo.js'; // 1. Importamos la utilidad NTP
+import { obtenerHoraNTP } from '../utils/tiempo.js'; 
 
 const router = express.Router();
 

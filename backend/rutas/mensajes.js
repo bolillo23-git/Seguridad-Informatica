@@ -13,7 +13,6 @@ router.post('/', async (req, res) => {
             return res.status(400).json({ mensaje: 'El mensaje no puede estar vacío' });
         }
 
-   
         const horaOficial = await obtenerHoraNTP();
 
     

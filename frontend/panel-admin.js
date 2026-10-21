@@ -18,15 +18,20 @@ function cerrarSesion() {
 // 2. Pedir todos los usuarios al backend al cargar la página
 async function cargarUsuarios() {
     try {
-      
         const respuesta = await fetch(`http://localhost:3000/api/admin/roles/buscar`, {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json',
-                'usuario-id': usuarioLocal.id 
+                'usuario-id': usuarioLocal.id
             }
         });
         const usuarios = await respuesta.json();
+
+        // FIX: Evita el TypeError verificando que la respuesta sea exitosa antes del forEach
+        if (!respuesta.ok) {
+            console.error("Error del servidor:", usuarios.mensaje);
+            return;
+        }
 
         tablaUsuarios.innerHTML = '';
 
@@ -65,7 +70,10 @@ async function cambiarRol(idUsuario) {
     try {
         const respuesta = await fetch(`http://localhost:3000/api/admin/roles/${idUsuario}`, {
             method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/json',
+                'usuario-id': usuarioLocal.id // FIX: Faltaba enviar el gafete de administrador aquí
+            },
             body: JSON.stringify({ nuevoRol })
         });
 
@@ -79,7 +87,7 @@ async function cambiarRol(idUsuario) {
     } catch (error) {
         console.error('Error al cambiar rol:', error);
     }
-} // CORRECCIÓN 2: El buscador ya NO está atrapado dentro de esta función
+}
 
 // 4. Lógica del buscador con el botón
 const buscadorEmail = document.getElementById('buscadorEmail');
@@ -90,7 +98,6 @@ if (btnBuscar && buscadorEmail) {
         const textoBuscado = buscadorEmail.value.trim();
 
         try {
-            // CORRECCIÓN 3: Agregamos los headers al buscador también
             const respuesta = await fetch(`http://localhost:3000/api/admin/roles/buscar?correo=${textoBuscado}`, {
                 method: 'GET',
                 headers: {
@@ -99,6 +106,12 @@ if (btnBuscar && buscadorEmail) {
                 }
             });
             const usuarios = await respuesta.json();
+
+            // FIX: Validamos que haya éxito antes de dibujar la tabla
+            if (!respuesta.ok) {
+                console.error("Error del servidor:", usuarios.mensaje);
+                return;
+            }
 
             tablaUsuarios.innerHTML = '';
 
