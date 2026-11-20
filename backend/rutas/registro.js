@@ -2,16 +2,13 @@ import express from 'express';
 import bcrypt from 'bcryptjs';
 import User from '../models/User.js';
 import { obtenerHoraNTP } from '../utils/tiempo.js';
-import Log from '../models/Log.js'; // 1. Importamos el modelo de Logs
+import { registrarLog } from '../utils/logger.js'; // 1. Importamos la nueva utilidad
 
 const router = express.Router();
 
 router.post('/', async (req, res) => {
   try {
     const { email, password, nombreUsuario } = req.body;
-
-   
-    const ipUsuario = req.ip || req.socket.remoteAddress;
 
     let usuarioExistente = await User.findOne({ email });
     if (usuarioExistente) {
@@ -32,14 +29,8 @@ router.post('/', async (req, res) => {
 
     await nuevoUsuario.save();
 
-  
-    await new Log({
-      accion: 'NUEVO_REGISTRO',
-      usuario: nuevoUsuario._id,
-      detalles: `Se registró un nuevo usuario con correo: ${email}`,
-      ip: ipUsuario,
-      fechaHora: horaOficial
-    }).save();
+    // 2. Usamos el log centralizado (ya captura IP, Machine ID y Hora automáticamente)
+    await registrarLog('NUEVO_REGISTRO', `Se registró un nuevo usuario con correo: ${email}`, req, nuevoUsuario._id);
 
     res.status(201).json({ mensaje: 'Usuario registrado exitosamente' });
 

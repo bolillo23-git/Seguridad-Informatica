@@ -1,69 +1,51 @@
 import express from 'express';
 import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
 import { obtenerHoraNTP } from '../utils/tiempo.js';
-import Log from '../models/Log.js';
+import { registrarLog } from '../utils/logger.js';
 
 const router = express.Router();
 
 router.post('/', async (req, res) => {
   try {
     const { email, password } = req.body;
-
-    
     const horaOficial = await obtenerHoraNTP();
-    const ipUsuario = req.ip || req.socket.remoteAddress;
 
     const usuario = await User.findOne({ email });
 
     if (!usuario) {
-     
-      await new Log({
-        accion: 'LOGIN_FALLIDO',
-        detalles: `Intento de acceso con correo inexistente: ${email}`,
-        ip: ipUsuario,
-        fechaHora: horaOficial
-      }).save();
-
+      await registrarLog('LOGIN_FALLIDO', `Intento con correo inexistente: ${email}`, req);
       return res.status(400).json({ mensaje: 'Credenciales inválidas' });
+    }
+
+    // Mantenemos esto por si un MODERADOR o ADMIN bloquea la cuenta manualmente
+    if (usuario.estado === 'bloqueado' || usuario.estado === 'suspendido') {
+      await registrarLog('LOGIN_RECHAZADO', 'Intento de acceso a una cuenta bloqueada o suspendida', req, usuario._id);
+      return res.status(403).json({ mensaje: 'Tu cuenta ha sido bloqueada. Contacta al administrador.' });
     }
 
     const contrasenaValida = await bcrypt.compare(password, usuario.password);
-
     if (!contrasenaValida) {
-      
-      await new Log({
-        accion: 'LOGIN_FALLIDO',
-        usuario: usuario._id,
-        detalles: 'Contraseña incorrecta',
-        ip: ipUsuario,
-        fechaHora: horaOficial
-      }).save();
-
+      await registrarLog('LOGIN_FALLIDO', 'Contraseña incorrecta', req, usuario._id);
       return res.status(400).json({ mensaje: 'Credenciales inválidas' });
     }
 
-    
     usuario.ultimoLogin = horaOficial;
     await usuario.save();
 
-   
-    await new Log({
-      accion: 'LOGIN_EXITOSO',
-      usuario: usuario._id,
-      detalles: 'El usuario inició sesión correctamente',
-      ip: ipUsuario,
-      fechaHora: horaOficial
-    }).save();
+    await registrarLog('LOGIN_EXITOSO', 'Inicio de sesión exitoso', req, usuario._id);
+
+    const token = jwt.sign(
+      { id: usuario._id, rol: usuario.rol },
+      process.env.JWT_SECRET,
+      { expiresIn: '24h' }
+    );
 
     res.status(200).json({
       mensaje: '¡Login exitoso, hermano!',
-      usuario: {
-        id: usuario._id,
-        email: usuario.email,
-        nombreUsuario: usuario.nombreUsuario,
-        rol: usuario.rol
-      }
+      token,
+      usuario: { id: usuario._id, email: usuario.email, nombreUsuario: usuario.nombreUsuario, rol: usuario.rol }
     });
 
   } catch (error) {

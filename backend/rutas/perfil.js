@@ -2,12 +2,12 @@ import express from 'express';
 import bcrypt from 'bcryptjs';
 import User from '../models/User.js';
 import Publicacion from '../models/Publicacion.js';
-import { obtenerHoraNTP } from '../utils/tiempo.js'; // 1. Importamos utilidad NTP
-import Log from '../models/Log.js'; 
+import { registrarLog } from '../utils/logger.js'; // 1. Importamos el logger centralizado
+import { verificarToken } from '../middlewares/auth.js';
 
 const router = express.Router();
 
-router.get('/:id', async (req, res) => {
+router.get('/:id', verificarToken, async (req, res) => {
   try {
     const usuario = await User.findById(req.params.id).select('-password');
     if (!usuario) return res.status(404).json({ mensaje: 'Usuario no encontrado' });
@@ -20,7 +20,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // 2. Obtener solo las publicaciones de este usuario
-router.get('/:id/publicaciones', async (req, res) => {
+router.get('/:id/publicaciones', verificarToken, async (req, res) => {
   try {
     const publicaciones = await Publicacion.find({ autor: req.params.id })
       .sort({ fechaCreacion: -1 });
@@ -33,7 +33,11 @@ router.get('/:id/publicaciones', async (req, res) => {
 });
 
 // 3. Cambiar solo la foto de perfil
-router.put('/:id/foto', async (req, res) => {
+router.put('/:id/foto', verificarToken, async (req, res) => {
+  if (req.params.id !== req.usuario.id) {
+    return res.status(403).json({ mensaje: 'No puedes editar la foto de un perfil ajeno' });
+  }
+
   try {
     const { fotoBase64 } = req.body;
     const usuario = await User.findByIdAndUpdate(
@@ -49,7 +53,11 @@ router.put('/:id/foto', async (req, res) => {
 });
 
 // 4. Cambiar foto de portada
-router.put('/:id/portada', async (req, res) => {
+router.put('/:id/portada', verificarToken, async (req, res) => {
+  if (req.params.id !== req.usuario.id) {
+    return res.status(403).json({ mensaje: 'No puedes editar la portada de un perfil ajeno' });
+  }
+
   try {
     const { fotoBase64 } = req.body;
     const usuario = await User.findByIdAndUpdate(
@@ -65,19 +73,17 @@ router.put('/:id/portada', async (req, res) => {
 });
 
 
+router.put('/:id', verificarToken, async (req, res) => {
+  if (req.params.id !== req.usuario.id) {
+    return res.status(403).json({ mensaje: 'No puedes editar la información de un perfil ajeno' });
+  }
 
-
-router.put('/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const { nombreUsuario, password } = req.body;
 
-    
-    const ipUsuario = req.ip || req.socket.remoteAddress;
-    const horaOficial = await obtenerHoraNTP();
-
     let camposAActualizar = {};
-    let seCambioContrasena = false; 
+    let seCambioContrasena = false;
 
     if (nombreUsuario) {
       camposAActualizar.nombreUsuario = nombreUsuario;
@@ -99,15 +105,9 @@ router.put('/:id', async (req, res) => {
       return res.status(404).json({ mensaje: 'Usuario no encontrado' });
     }
 
-    // LOG
+    // 5. LOG CENTRALIZADO (Contraseña)
     if (seCambioContrasena) {
-      await new Log({
-        accion: 'CONTRASENA_ACTUALIZADA',
-        usuario: id,
-        detalles: `El usuario actualizó su contraseña`,
-        ip: ipUsuario,
-        fechaHora: horaOficial
-      }).save();
+      await registrarLog('CONTRASENA_ACTUALIZADA', 'El usuario actualizó su contraseña', req, id);
     }
 
     res.status(200).json({
@@ -122,31 +122,24 @@ router.put('/:id', async (req, res) => {
 });
 
 // Ruta DELETE 
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', verificarToken, async (req, res) => {
+  if (req.params.id !== req.usuario.id) {
+    return res.status(403).json({ mensaje: 'No puedes eliminar una cuenta que no te pertenece' });
+  }
+
   try {
     const { id } = req.params;
 
-  
-    const ipUsuario = req.ip || req.socket.remoteAddress;
-    const horaOficial = await obtenerHoraNTP();
-
-   
     const usuarioEliminado = await User.findByIdAndDelete(id);
 
     if (!usuarioEliminado) {
       return res.status(404).json({ mensaje: 'Usuario no encontrado' });
     }
 
-    
     await Publicacion.deleteMany({ autor: id });
 
-    // log
-    await new Log({
-      accion: 'CUENTA_ELIMINADA',
-      detalles: `El usuario ${usuarioEliminado.email} eliminó su cuenta definitivamente junto con sus publicaciones`,
-      ip: ipUsuario,
-      fechaHora: horaOficial
-    }).save();
+    // 6. LOG CENTRALIZADO (Cuenta eliminada)
+    await registrarLog('CUENTA_ELIMINADA', `El usuario ${usuarioEliminado.email} eliminó su cuenta definitivamente junto con sus publicaciones`, req);
 
     res.status(200).json({
       mensaje: 'Cuenta y publicaciones eliminadas correctamente'

@@ -1,10 +1,11 @@
 import express from 'express';
 import User from '../models/User.js';
+import { verificarToken } from '../middlewares/auth.js'; // 1. Importamos el middleware
 
 const router = express.Router();
 
-// Ruta GET para buscar usuarios por su nombre
-router.get('/buscar', async (req, res) => {
+// 2. Protegemos la ruta inyectando verificarToken
+router.get('/buscar', verificarToken, async (req, res) => {
     try {
         const { nombre } = req.query;
 
