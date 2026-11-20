@@ -18,7 +18,7 @@ function cerrarSesion() {
 
 async function cargarUsuarios() {
     try {
-        const respuesta = await fetch(`http://localhost:3000/api/admin/roles/buscar`, {
+        const respuesta = await fetch(`${API_URL}/api/admin/roles/buscar`, {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json',
@@ -66,7 +66,7 @@ async function cambiarRol(idUsuario) {
     const nuevoRol = document.getElementById(`select-rol-${idUsuario}`).value;
 
     try {
-        const respuesta = await fetch(`http://localhost:3000/api/admin/roles/${idUsuario}`, {
+        const respuesta = await fetch(`${API_URL}/api/admin/roles/${idUsuario}`, {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
@@ -95,7 +95,7 @@ if (btnBuscar && buscadorEmail) {
         const textoBuscado = buscadorEmail.value.trim();
 
         try {
-            const respuesta = await fetch(`http://localhost:3000/api/admin/roles/buscar?correo=${textoBuscado}`, {
+            const respuesta = await fetch(`${API_URL}/api/admin/roles/buscar?correo=${textoBuscado}`, {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',

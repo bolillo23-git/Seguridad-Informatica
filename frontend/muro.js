@@ -15,7 +15,7 @@ if (!usuarioLocal || !token) {
         elementoRol.style.display = 'block';
     }
 
-    fetch(`http://localhost:3000/api/perfil/${usuarioLocal.id}`, {
+    fetch(`${API_URL}/api/perfil/${usuarioLocal.id}`, {
         headers: { 'Authorization': `Bearer ${token}` }
     })
         .then(res => res.json())
@@ -39,13 +39,13 @@ const contenedorPublicaciones = document.getElementById('contenedorPublicaciones
 
 async function cargarPublicaciones() {
     try {
-        const resSocial = await fetch(`http://localhost:3000/api/amigos/mis-datos`, {
+        const resSocial = await fetch(`${API_URL}/api/amigos/mis-datos`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         const misDatos = await resSocial.json();
         const misAmigosIds = misDatos.amigos.map(amigo => amigo._id);
 
-        const respuesta = await fetch('http://localhost:3000/api/publicaciones', {
+        const respuesta = await fetch(`${API_URL}/api/publicaciones`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         const publicaciones = await respuesta.json();
@@ -87,7 +87,7 @@ formularioPublicacion.addEventListener('submit', async (e) => {
     const contenido = document.getElementById('contenidoPost').value;
 
     try {
-        const respuesta = await fetch('http://localhost:3000/api/publicaciones', {
+        const respuesta = await fetch(`${API_URL}/api/publicaciones`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -113,7 +113,7 @@ cargarPublicaciones();
 
 async function cargarDatosSociales() {
     try {
-        const respuesta = await fetch(`http://localhost:3000/api/amigos/mis-datos`, {
+        const respuesta = await fetch(`${API_URL}/api/amigos/mis-datos`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         const datos = await respuesta.json();
@@ -160,7 +160,7 @@ async function cargarDatosSociales() {
 
 async function aceptarSolicitud(idSolicitante) {
     try {
-        const respuesta = await fetch(`http://localhost:3000/api/amigos/aceptar/${idSolicitante}`, {
+        const respuesta = await fetch(`${API_URL}/api/amigos/aceptar/${idSolicitante}`, {
             method: 'POST',
             headers: { 'Authorization': `Bearer ${token}` }
         });
@@ -175,7 +175,7 @@ async function aceptarSolicitud(idSolicitante) {
 
 async function enviarSolicitud(idDestino) {
     try {
-        const respuesta = await fetch(`http://localhost:3000/api/amigos/solicitar/${idDestino}`, {
+        const respuesta = await fetch(`${API_URL}/api/amigos/solicitar/${idDestino}`, {
             method: 'POST',
             headers: { 'Authorization': `Bearer ${token}` }
         });
@@ -214,7 +214,7 @@ async function cargarHistorialChat() {
 
     try {
         // La URL ahora solo pide el ID del amigo
-        const respuesta = await fetch(`http://localhost:3000/api/mensajes/${amigoActualId}`, {
+        const respuesta = await fetch(`${API_URL}/api/mensajes/${amigoActualId}`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         const mensajes = await respuesta.json();
@@ -258,7 +258,7 @@ formEnviarMensaje.addEventListener('submit', async (e) => {
     if (!contenido || !amigoActualId) return;
 
     try {
-        const respuesta = await fetch('http://localhost:3000/api/mensajes', {
+        const respuesta = await fetch(`${API_URL}/api/mensajes`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -288,13 +288,13 @@ formBuscarPersonas.addEventListener('submit', async (e) => {
     if (!textoBuscado) return;
 
     try {
-        const resSocial = await fetch(`http://localhost:3000/api/amigos/mis-datos`, {
+        const resSocial = await fetch(`${API_URL}/api/amigos/mis-datos`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         const misDatos = await resSocial.json();
         const misAmigosIds = misDatos.amigos.map(a => a._id);
 
-        const respuesta = await fetch(`http://localhost:3000/api/usuarios/buscar?nombre=${textoBuscado}`, {
+        const respuesta = await fetch(`${API_URL}/api/usuarios/buscar?nombre=${textoBuscado}`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         const usuarios = await respuesta.json();

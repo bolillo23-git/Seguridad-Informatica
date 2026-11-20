@@ -13,7 +13,7 @@ const esMiPerfil = (idCargar === usuarioLocal.id);
 
 async function cargarDatosPerfil() {
     try {
-        const resUser = await fetch(`http://localhost:3000/api/perfil/${idCargar}`, {
+        const resUser = await fetch(`${API_URL}/api/perfil/${idCargar}`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         const usuario = await resUser.json();
@@ -27,7 +27,7 @@ async function cargarDatosPerfil() {
             document.getElementById('imgPortada').src = usuario.fotoPortada;
         }
 
-        const resPubs = await fetch(`http://localhost:3000/api/perfil/${idCargar}/publicaciones`, {
+        const resPubs = await fetch(`${API_URL}/api/perfil/${idCargar}/publicaciones`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         const publicaciones = await resPubs.json();
@@ -87,7 +87,7 @@ if (inputFoto) {
             const fotoBase64 = lector.result;
 
             try {
-                const respuesta = await fetch(`http://localhost:3000/api/perfil/${usuarioLocal.id}/foto`, {
+                const respuesta = await fetch(`${API_URL}/api/perfil/${usuarioLocal.id}/foto`, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
@@ -133,7 +133,7 @@ if (formEditarPerfil) {
         }
 
         try {
-            const respuesta = await fetch(`http://localhost:3000/api/perfil/${usuarioLocal.id}`, {
+            const respuesta = await fetch(`${API_URL}/api/perfil/${usuarioLocal.id}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -163,7 +163,7 @@ async function eliminarCuenta() {
     if (!confirmar) return;
 
     try {
-        const respuesta = await fetch(`http://localhost:3000/api/perfil/${usuarioLocal.id}`, {
+        const respuesta = await fetch(`${API_URL}/api/perfil/${usuarioLocal.id}`, {
             method: 'DELETE',
             headers: { 'Authorization': `Bearer ${token}` }
         });
@@ -194,7 +194,7 @@ if (inputPortada) {
             const fotoBase64 = lector.result;
 
             try {
-                const respuesta = await fetch(`http://localhost:3000/api/perfil/${usuarioLocal.id}/portada`, {
+                const respuesta = await fetch(`${API_URL}/api/perfil/${usuarioLocal.id}/portada`, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
