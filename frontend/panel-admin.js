@@ -1,33 +1,32 @@
 const usuarioLocal = JSON.parse(localStorage.getItem('usuarioLogueado'));
+const token = localStorage.getItem('tokenAutenticacion'); // Leemos el token
 const tablaUsuarios = document.getElementById('tablaUsuarios');
 
-// 1. Protección de ruta: Si no hay usuario o no es admin, lo expulsamos
-if (!usuarioLocal || usuarioLocal.rol !== 'admin') {
+if (!usuarioLocal || !token || usuarioLocal.rol !== 'admin') {
     alert('Acceso denegado. Área exclusiva para administradores.');
     window.location.href = 'muro.html';
 } else {
     document.getElementById('nombreAdminDisplay').innerText = `Admin: ${usuarioLocal.nombreUsuario}`;
-    cargarUsuarios(); // Se llama al inicio para llenar la tabla
+    cargarUsuarios();
 }
 
 function cerrarSesion() {
     localStorage.removeItem('usuarioLogueado');
+    localStorage.removeItem('tokenAutenticacion');
     window.location.href = 'login.html';
 }
 
-// 2. Pedir todos los usuarios al backend al cargar la página
 async function cargarUsuarios() {
     try {
         const respuesta = await fetch(`http://localhost:3000/api/admin/roles/buscar`, {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json',
-                'usuario-id': usuarioLocal.id
+                'Authorization': `Bearer ${token}` // Reemplazamos header vulnerable
             }
         });
         const usuarios = await respuesta.json();
 
-        // FIX: Evita el TypeError verificando que la respuesta sea exitosa antes del forEach
         if (!respuesta.ok) {
             console.error("Error del servidor:", usuarios.mensaje);
             return;
@@ -63,7 +62,6 @@ async function cargarUsuarios() {
     }
 }
 
-// 3. Enviar el cambio de rol al backend
 async function cambiarRol(idUsuario) {
     const nuevoRol = document.getElementById(`select-rol-${idUsuario}`).value;
 
@@ -72,14 +70,14 @@ async function cambiarRol(idUsuario) {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
-                'usuario-id': usuarioLocal.id // FIX: Faltaba enviar el gafete de administrador aquí
+                'Authorization': `Bearer ${token}`
             },
             body: JSON.stringify({ nuevoRol })
         });
 
         if (respuesta.status === 200) {
             alert('Rol actualizado correctamente');
-            cargarUsuarios(); // Recargamos la tabla para ver los cambios
+            cargarUsuarios();
         } else {
             const datos = await respuesta.json();
             alert(datos.mensaje);
@@ -89,7 +87,6 @@ async function cambiarRol(idUsuario) {
     }
 }
 
-// 4. Lógica del buscador con el botón
 const buscadorEmail = document.getElementById('buscadorEmail');
 const btnBuscar = document.getElementById('btnBuscar');
 
@@ -102,12 +99,11 @@ if (btnBuscar && buscadorEmail) {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
-                    'usuario-id': usuarioLocal.id // Pase VIP
+                    'Authorization': `Bearer ${token}`
                 }
             });
             const usuarios = await respuesta.json();
 
-            // FIX: Validamos que haya éxito antes de dibujar la tabla
             if (!respuesta.ok) {
                 console.error("Error del servidor:", usuarios.mensaje);
                 return;

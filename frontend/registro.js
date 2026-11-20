@@ -1,3 +1,10 @@
+// Generamos o recuperamos el ID único de la máquina
+let machineId = localStorage.getItem('machineId');
+if (!machineId) {
+    machineId = crypto.randomUUID();
+    localStorage.setItem('machineId', machineId);
+}
+
 const formularioRegistro = document.getElementById('formularioRegistro');
 
 formularioRegistro.addEventListener('submit', async (e) => {
@@ -12,14 +19,14 @@ formularioRegistro.addEventListener('submit', async (e) => {
         const respuesta = await fetch('http://localhost:3000/api/registro', {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                'X-Machine-Id': machineId // Enviamos el ID de la máquina al backend
             },
-            body: JSON.stringify({ email, password, nombreUsuario }) 
+            body: JSON.stringify({ email, password, nombreUsuario })
         });
 
         const datos = await respuesta.json();
 
-        
         if (respuesta.status === 201) {
             alert('¡Usuario registrado con éxito!');
             window.location.href = 'login.html'; // Lo mandamos directo al login

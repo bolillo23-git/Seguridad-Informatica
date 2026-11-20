@@ -1,24 +1,23 @@
-// 1. Leemos los datos y validamos
 const usuarioLocal = JSON.parse(localStorage.getItem('usuarioLogueado'));
+const token = localStorage.getItem('tokenAutenticacion'); // Leemos el token
 
-if (!usuarioLocal) {
+if (!usuarioLocal || !token) {
     window.location.href = 'login.html';
 } else {
-    // Pintamos los datos básicos que ya tenemos en memoria
     document.getElementById('nombreUsuarioDisplay').innerText = usuarioLocal.nombreUsuario;
     document.getElementById('perfilNombre').innerText = usuarioLocal.nombreUsuario;
 
-    // Lógica para ocultar el rol si es un usuario normal
     const elementoRol = document.getElementById('perfilRol');
     if (usuarioLocal.rol.toLowerCase() === 'usuario') {
-        elementoRol.style.display = 'none'; // Lo ocultamos por completo
+        elementoRol.style.display = 'none';
     } else {
         elementoRol.innerText = usuarioLocal.rol.toUpperCase();
-        elementoRol.style.display = 'block'; // Lo mostramos para ADMIN o MOD
+        elementoRol.style.display = 'block';
     }
 
-    // NUEVO: Le pedimos al backend tu foto más actualizada para mostrarla en la columna izquierda
-    fetch(`http://localhost:3000/api/perfil/${usuarioLocal.id}`)
+    fetch(`http://localhost:3000/api/perfil/${usuarioLocal.id}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+    })
         .then(res => res.json())
         .then(datosUsuario => {
             const imgMuro = document.getElementById('imgPerfilMuroIzq');
@@ -29,27 +28,26 @@ if (!usuarioLocal) {
         .catch(err => console.error('Error al cargar la foto de perfil en el muro:', err));
 }
 
-// 2. Función para cerrar sesión (la llama el botón del HTML)
 function cerrarSesion() {
     localStorage.removeItem('usuarioLogueado');
+    localStorage.removeItem('tokenAutenticacion');
     window.location.href = 'login.html';
 }
 
-// 3. Lógica del muro
 const formularioPublicacion = document.getElementById('formularioPublicacion');
 const contenedorPublicaciones = document.getElementById('contenedorPublicaciones');
 
 async function cargarPublicaciones() {
     try {
-        // 1. Primero pedimos nuestra propia lista de amigos
-        const resSocial = await fetch(`http://localhost:3000/api/amigos/mis-datos/${usuarioLocal.id}`);
+        const resSocial = await fetch(`http://localhost:3000/api/amigos/mis-datos`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
         const misDatos = await resSocial.json();
-
-        // Extraemos solo los IDs de nuestros amigos para compararlos fácilmente
         const misAmigosIds = misDatos.amigos.map(amigo => amigo._id);
 
-        // 2. Pedimos las publicaciones
-        const respuesta = await fetch('http://localhost:3000/api/publicaciones');
+        const respuesta = await fetch('http://localhost:3000/api/publicaciones', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
         const publicaciones = await respuesta.json();
 
         contenedorPublicaciones.innerHTML = '';
@@ -57,12 +55,9 @@ async function cargarPublicaciones() {
         publicaciones.forEach(pub => {
             const nombreAutor = pub.autor ? pub.autor.nombreUsuario : 'Usuario Eliminado';
             const fecha = new Date(pub.fechaCreacion).toLocaleString('es-MX');
-
-            // 3. Verificamos: ¿Es de otra persona? y ¿NO somos amigos todavía?
             const esDeOtro = pub.autor && pub.autor._id !== usuarioLocal.id;
             const yaSomosAmigos = pub.autor && misAmigosIds.includes(pub.autor._id);
 
-            // Solo mostramos el botón si es de otro usuario Y aún no somos amigos
             const botonAgregar = (esDeOtro && !yaSomosAmigos)
                 ? `<button class="btn btn-light btn-sm text-primary ms-2" onclick="enviarSolicitud('${pub.autor._id}')" title="Agregar amigo"><i class="bi bi-person-plus"></i></button>`
                 : '';
@@ -71,12 +66,10 @@ async function cargarPublicaciones() {
             div.className = 'card p-3 mb-3 shadow-sm border-0';
             div.innerHTML = `
                 <div class="d-flex align-items-center mb-2">
-                    <!-- ENLACE AL PERFIL DEL AUTOR -->
                     <a href="perfil.html?id=${pub.autor._id}" class="text-decoration-none text-dark d-flex align-items-center me-2">
                         <i class="bi bi-person-circle fs-4 me-2 text-secondary"></i>
                         <h6 class="mb-0 fw-bold hover-primary text-decoration-underline-hover">${nombreAutor}</h6>
                     </a>
-                    
                     ${botonAgregar}
                     <small class="text-muted ms-auto">${fecha}</small>
                 </div>
@@ -88,21 +81,19 @@ async function cargarPublicaciones() {
         console.error('Error al cargar publicaciones:', error);
     }
 }
+
 formularioPublicacion.addEventListener('submit', async (e) => {
     e.preventDefault();
-
     const contenido = document.getElementById('contenidoPost').value;
 
     try {
         const respuesta = await fetch('http://localhost:3000/api/publicaciones', {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
             },
-            body: JSON.stringify({
-                contenido: contenido,
-                autorId: usuarioLocal.id
-            })
+            body: JSON.stringify({ contenido: contenido }) // Eliminado autorId
         });
 
         if (respuesta.status === 201) {
@@ -118,16 +109,13 @@ formularioPublicacion.addEventListener('submit', async (e) => {
     }
 });
 
-// Cargar posts al entrar
 cargarPublicaciones();
 
-
-// --- NUEVAS FUNCIONES SOCIALES ---
-
-// Obtener mis datos (amigos y solicitudes) y dibujarlos en el panel lateral
 async function cargarDatosSociales() {
     try {
-        const respuesta = await fetch(`http://localhost:3000/api/amigos/mis-datos/${usuarioLocal.id}`);
+        const respuesta = await fetch(`http://localhost:3000/api/amigos/mis-datos`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
         const datos = await respuesta.json();
 
         const listaSolicitudes = document.getElementById('listaSolicitudes');
@@ -136,7 +124,6 @@ async function cargarDatosSociales() {
         listaSolicitudes.innerHTML = '';
         listaAmigos.innerHTML = '';
 
-        // Dibujar solicitudes
         if (datos.solicitudes.length === 0) {
             listaSolicitudes.innerHTML = '<p class="text-muted small">No tienes solicitudes nuevas.</p>';
         } else {
@@ -152,7 +139,6 @@ async function cargarDatosSociales() {
             });
         }
 
-        // Dibujar amigos
         if (datos.amigos.length === 0) {
             listaAmigos.innerHTML = '<p class="text-muted small">Aún no has agregado amigos.</p>';
         } else {
@@ -172,32 +158,26 @@ async function cargarDatosSociales() {
     }
 }
 
-// Aceptar una solicitud de amistad
 async function aceptarSolicitud(idSolicitante) {
     try {
         const respuesta = await fetch(`http://localhost:3000/api/amigos/aceptar/${idSolicitante}`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ miId: usuarioLocal.id })
+            headers: { 'Authorization': `Bearer ${token}` }
         });
 
         const datos = await respuesta.json();
         alert(datos.mensaje);
-
-        // Recargamos el panel para que el amigo pase a la lista de abajo automáticamente
         cargarDatosSociales();
     } catch (error) {
         console.error('Error al aceptar solicitud:', error);
     }
 }
 
-// Enviar solicitud de amistad desde el muro
 async function enviarSolicitud(idDestino) {
     try {
         const respuesta = await fetch(`http://localhost:3000/api/amigos/solicitar/${idDestino}`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ miId: usuarioLocal.id })
+            headers: { 'Authorization': `Bearer ${token}` }
         });
 
         const datos = await respuesta.json();
@@ -207,47 +187,38 @@ async function enviarSolicitud(idDestino) {
     }
 }
 
-// Función para abrir la ventana de mensajes
-// --- LÓGICA DE MENSAJERÍA PRIVADA ---
-
 let amigoActualId = null;
-let intervaloChat = null; // Controlará la recarga automática
+let intervaloChat = null;
 
-// 1. Abrir la ventana y cargar la información
 async function abrirChat(idAmigo, nombreAmigo) {
     amigoActualId = idAmigo;
-
-    // Ponemos el nombre en la cabecera
     document.getElementById('nombreChatAmigo').innerText = nombreAmigo;
 
-    // Mostramos la ventana
     const modalChat = new bootstrap.Modal(document.getElementById('modalChat'));
     modalChat.show();
 
     await cargarHistorialChat();
 
-    // Iniciamos el "Polling": Recargar el chat automáticamente cada 2 segundos
     if (intervaloChat) clearInterval(intervaloChat);
     intervaloChat = setInterval(cargarHistorialChat, 2000);
 }
 
-// DETALLE IMPORTANTE: Cuando cerramos la ventana de chat, debemos detener el temporizador
 document.getElementById('modalChat').addEventListener('hidden.bs.modal', () => {
     if (intervaloChat) clearInterval(intervaloChat);
     amigoActualId = null;
 });
 
-// 2. Descargar el historial de la base de datos
 async function cargarHistorialChat() {
     if (!amigoActualId) return;
-
     const cuerpoChat = document.getElementById('cuerpoChat');
 
     try {
-        const respuesta = await fetch(`http://localhost:3000/api/mensajes/${usuarioLocal.id}/${amigoActualId}`);
+        // La URL ahora solo pide el ID del amigo
+        const respuesta = await fetch(`http://localhost:3000/api/mensajes/${amigoActualId}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
         const mensajes = await respuesta.json();
 
-        // Usamos una variable temporal para no hacer parpadear la pantalla
         let htmlChat = '';
 
         if (mensajes.length === 0) {
@@ -255,8 +226,6 @@ async function cargarHistorialChat() {
         } else {
             mensajes.forEach(msg => {
                 const esMio = msg.remitente === usuarioLocal.id;
-
-                // Si es mío va a la derecha y azul, si es del amigo va a la izquierda y blanco
                 const alineacion = esMio ? 'text-end' : 'text-start';
                 const colorBurbuja = esMio ? 'bg-primary text-white shadow-sm' : 'bg-white text-dark shadow-sm border';
 
@@ -270,11 +239,9 @@ async function cargarHistorialChat() {
             });
         }
 
-        // Solo inyectamos el HTML al chat si hay algún cambio real en la conversación
-        // Esto evita que el scroll "salte" o se trabe si estás leyendo mensajes viejos
         if (cuerpoChat.innerHTML !== htmlChat) {
             cuerpoChat.innerHTML = htmlChat;
-            cuerpoChat.scrollTop = cuerpoChat.scrollHeight; // Bajamos el scroll al último mensaje
+            cuerpoChat.scrollTop = cuerpoChat.scrollHeight;
         }
 
     } catch (error) {
@@ -282,12 +249,9 @@ async function cargarHistorialChat() {
     }
 }
 
-// 3. Enviar un nuevo mensaje
 const formEnviarMensaje = document.getElementById('formEnviarMensaje');
-
 formEnviarMensaje.addEventListener('submit', async (e) => {
     e.preventDefault();
-
     const inputMensaje = document.getElementById('inputMensaje');
     const contenido = inputMensaje.value.trim();
 
@@ -296,11 +260,13 @@ formEnviarMensaje.addEventListener('submit', async (e) => {
     try {
         const respuesta = await fetch('http://localhost:3000/api/mensajes', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
             body: JSON.stringify({
-                remitente: usuarioLocal.id,
                 destinatario: amigoActualId,
-                contenido: contenido
+                contenido: contenido // Eliminado remitente
             })
         });
 
@@ -313,23 +279,24 @@ formEnviarMensaje.addEventListener('submit', async (e) => {
     }
 });
 
-// --- LÓGICA DEL BUSCADOR DE PERSONAS ---
 const formBuscarPersonas = document.getElementById('formBuscarPersonas');
 const cuerpoResultados = document.getElementById('cuerpoResultados');
 
 formBuscarPersonas.addEventListener('submit', async (e) => {
     e.preventDefault();
-
     const textoBuscado = document.getElementById('inputBuscarPersonas').value.trim();
     if (!textoBuscado) return;
 
     try {
-        // Pedimos nuestra lista de amigos para saber a quién ponerle el botón
-        const resSocial = await fetch(`http://localhost:3000/api/amigos/mis-datos/${usuarioLocal.id}`);
+        const resSocial = await fetch(`http://localhost:3000/api/amigos/mis-datos`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
         const misDatos = await resSocial.json();
         const misAmigosIds = misDatos.amigos.map(a => a._id);
 
-        const respuesta = await fetch(`http://localhost:3000/api/usuarios/buscar?nombre=${textoBuscado}`);
+        const respuesta = await fetch(`http://localhost:3000/api/usuarios/buscar?nombre=${textoBuscado}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
         const usuarios = await respuesta.json();
 
         cuerpoResultados.innerHTML = '';
@@ -340,12 +307,11 @@ formBuscarPersonas.addEventListener('submit', async (e) => {
             let hayResultados = false;
 
             usuarios.forEach(user => {
-                if (user._id === usuarioLocal.id) return; // Saltarnos a nosotros mismos
+                if (user._id === usuarioLocal.id) return;
 
                 hayResultados = true;
                 const yaSomosAmigos = misAmigosIds.includes(user._id);
 
-                // Si ya somos amigos, ponemos una insignia verde. Si no, el botón.
                 const botonAccion = yaSomosAmigos
                     ? `<span class="badge bg-success"><i class="bi bi-check-lg"></i> Amigos</span>`
                     : `<button class="btn btn-outline-primary btn-sm" onclick="enviarSolicitud('${user._id}')">
